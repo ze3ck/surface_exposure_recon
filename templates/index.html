@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EXPOSURE // RECON</title>
+  <style>
+    :root {
+      --bg: #07090c;
+      --card: #0e1318;
+      --line: #1c2733;
+      --text: #d7e2ec;
+      --muted: #7d8d9c;
+      --acc: #3ee0c4;
+      --acc2: #7ab4ff;
+      --ok: #3dd68c;
+      --warn: #e8b85c;
+      --bad: #ff6b6b;
+      --grid: rgba(62, 224, 196, .06);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font: 13px/1.45 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      background:
+        linear-gradient(180deg, rgba(7,9,12,.92), rgba(7,9,12,.97)),
+        repeating-linear-gradient(0deg, transparent 0 2px, var(--grid) 2px 3px),
+        #07090c;
+    }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 22px; border-bottom: 1px solid var(--line);
+      background: #0b1014cc; backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .brand { display: flex; align-items: baseline; gap: 10px; letter-spacing: .12em; }
+    .brand b { color: var(--acc); font-size: 13px; }
+    .brand span { color: var(--muted); font-size: 11px; }
+    .classif {
+      font: 10px/1 ui-monospace, Menlo, Consolas, monospace;
+      color: var(--warn); border: 1px solid #5a4a22; padding: 4px 8px; letter-spacing: .14em;
+    }
+    .mods { display: flex; gap: 6px; align-items: center; }
+    .mods a {
+      color: var(--muted); border: 1px solid var(--line); padding: 5px 10px;
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    }
+    .mods a.active { color: var(--acc); border-color: #1e4; }
+    .hit-listing { color: var(--bad); }
+    .hit-status { color: var(--warn); }
+    main { max-width: 1080px; margin: 0 auto; padding: 22px 18px 50px; }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); margin-bottom: 14px;
+    }
+    .panel h2, .k {
+      margin: 0; padding: 8px 12px; font-size: 10px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--acc); border-bottom: 1px solid var(--line);
+      background: #0a0f13;
+    }
+    .pad { padding: 14px; }
+    label.field { display: block; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+    textarea, input[type=number] {
+      width: 100%; background: #070b0e; color: var(--text); border: 1px solid var(--line);
+      padding: 8px 10px; font: 13px ui-monospace, Menlo, Consolas, monospace;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 14px 18px; margin: 12px 0; color: var(--text); }
+    .checks label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+    button, .btn {
+      background: var(--acc); color: #04110e; border: 0; padding: 8px 14px;
+      font: 600 12px/1 "IBM Plex Sans", sans-serif; letter-spacing: .08em;
+      text-transform: uppercase; cursor: pointer;
+    }
+    button.ghost, .btn.ghost {
+      background: transparent; color: var(--acc2); border: 1px solid var(--line);
+    }
+    button.ghost.active { border-color: var(--acc); color: var(--acc); background: #10211e; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn.tiny { padding: 5px 8px; font-size: 10px; margin-right: 6px; }
+    .btn.danger { color: var(--bad); border-color: #5a2a2a; }
+    .case-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .case-toolbar input[type=search] {
+      min-width: min(280px, 100%); background: #070b0e; color: var(--text);
+      border: 1px solid var(--line); padding: 7px 10px;
+      font: 13px ui-monospace, Menlo, Consolas, monospace;
+    }
+    .counter {
+      font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--acc);
+      border: 1px solid var(--line); padding: 6px 10px;
+    }
+    .counter b { color: var(--text); }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chips button { font-size: 10px; }
+    .risk-high { color: var(--bad); }
+    .risk-medium { color: var(--warn); }
+    .risk-low { color: var(--ok); }
+    .risk-watch { color: var(--acc2); }
+    .pager {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; margin-top: 12px; flex-wrap: wrap;
+    }
+    .pager .pages { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .pager .pages button { min-width: 32px; padding: 5px 8px; }
+    .table-wrap { overflow-x: auto; }
+    .status { margin-left: 10px; color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .status.run { color: var(--warn); }
+    .status.ok { color: var(--ok); }
+    .status.error { color: var(--bad); }
+    pre.log {
+      margin: 0; max-height: 200px; overflow: auto; background: #05080a;
+      padding: 12px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+      color: #9fd; white-space: pre-wrap;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    a { color: var(--acc2); text-decoration: none; cursor: pointer; }
+    a + a { margin-left: 10px; }
+    .muted { color: var(--muted); }
+    .pill { font-size: 10px; border: 1px solid var(--line); padding: 2px 7px; color: var(--muted); white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; }
+    .pill.cdn { color: var(--warn); border-color: #5a4a22; }
+    .pill.live { color: var(--ok); border-color: #21543a; }
+    .pill.dead { color: var(--bad); border-color: #5a2a2a; }
+    .pill.high { color: var(--bad); }
+    .pill.web { color: var(--acc2); }
+
+    /* modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(3,6,8,.78);
+      display: none; z-index: 40; padding: 18px;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      width: min(1180px, 100%);
+      height: min(92vh, 980px);
+      margin: auto;
+      background: #0b1014;
+      border: 1px solid #244;
+      box-shadow: 0 0 0 1px #0a1a18, 0 30px 80px #000;
+      display: flex; flex-direction: column;
+    }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 10px 14px; border-bottom: 1px solid var(--line); background: #081015;
+    }
+    .modal-head .id { font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--acc); }
+    .modal-head .meta { color: var(--muted); font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .x {
+      background: transparent; color: var(--muted); border: 1px solid var(--line);
+      width: 34px; height: 34px; padding: 0; font-size: 16px;
+    }
+    .modal-body { padding: 14px; overflow: auto; flex: 1; }
+    .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+    .kpi { border: 1px solid var(--line); background: #070c10; padding: 10px; }
+    .kpi b { display: block; font-size: 22px; color: var(--acc); font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .kpi span { color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+    .flow-host { border: 1px solid var(--line); padding: 12px; margin-bottom: 10px; background: #0a1014; }
+    .flow-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .flow-head code { font-size: 13px; color: var(--acc2); }
+    .flow-ip { border-left: 3px solid var(--acc); padding: 8px 10px; background: #070b0e; margin-top: 6px; }
+    .flow-ip.cdn { border-left-color: var(--warn); }
+    .ports { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .md h1, .md h2, .md h3 { margin: 1.1em 0 .4em; }
+    .md code { background: #070b0e; padding: 1px 5px; }
+    .md pre { background: #070b0e; padding: 10px; overflow: auto; }
+    .md table { margin: 8px 0 16px; }
+    .dead-list { color: var(--muted); font-size: 12px; columns: 2; margin: 0; }
+    @media (max-width: 800px) {
+      .row, .kpis { grid-template-columns: 1fr 1fr; }
+      .overlay { padding: 0; }
+      .modal { height: 100%; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><b>EXPOSURE</b><span id="brand-sub">// PASSIVE RECON · CT · DNS · SHODAN</span></div>
+    <nav class="mods">
+      <a href="#recon" data-view="recon" class="active">Passive recon</a>
+      <a href="#indexof" data-view="indexof">Index of</a>
+    </nav>
+    <div class="classif">INTEL · ASSET OWNER USE ONLY</div>
+  </header>
+  <main id="view-recon">
+    <form id="f" class="panel">
+      <h2>Target intake</h2>
+      <div class="pad">
+        <label class="field" for="domains">Apex domains</label>
+        <textarea id="domains" placeholder="midominio.cl&#10;otro-sitio.com" required></textarea>
+        <div class="row">
+          <div>
+            <label class="field" for="max_subs">Max CT names</label>
+            <input id="max_subs" type="number" min="10" max="800" value="200">
+          </div>
+          <div>
+            <label class="field" for="max_http">Max HTTP probes</label>
+            <input id="max_http" type="number" min="0" max="50" value="15">
+          </div>
+        </div>
+        <p class="muted" id="shodan-status" style="margin:10px 0 0">Shodan: backend only (.env / secrets.json)</p>
+        <div class="checks">
+          <label><input type="checkbox" id="no_crtsh" checked> Skip crt.sh</label>
+          <label><input type="checkbox" id="skip_http"> Skip HTTP</label>
+        </div>
+        <button type="submit" id="go">Run collection</button>
+        <span class="status" id="st">idle</span>
+      </div>
+    </form>
+
+    <div class="panel">
+      <h2>Collector log</h2>
+      <pre class="log" id="log">waiting for task…</pre>
+    </div>
+
+    <div class="panel">
+      <h2>Case files</h2>
+      <div class="pad">
+        <div class="case-toolbar">
+          <input type="search" id="case-q" placeholder="search apex…" autocomplete="off">
+          <div class="chips" id="case-chips">
+            <button type="button" class="btn ghost tiny active" data-filter="all">All</button>
+            <button type="button" class="btn ghost tiny" data-filter="high">High</button>
+            <button type="button" class="btn ghost tiny" data-filter="cve">CVE</button>
+            <button type="button" class="btn ghost tiny" data-filter="dedicated">Dedicated IP</button>
+            <button type="button" class="btn ghost tiny" data-filter="cdn">CDN only</button>
+            <button type="button" class="btn ghost tiny" data-filter="open">Open</button>
+            <button type="button" class="btn ghost tiny" data-filter="done">Reviewed</button>
+          </div>
+          <select id="case-sort" style="background:#070b0e;color:var(--text);border:1px solid var(--line);padding:6px 8px">
+            <option value="recent">sort: recent</option>
+            <option value="risk">sort: risk</option>
+            <option value="name">sort: name</option>
+          </select>
+          <div class="counter" id="case-count">scanned <b>0</b></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rev</th><th>Apex</th><th>Risk</th><th>High</th><th>CVE</th><th>IPs</th><th>Collected</th><th>Actions</th></tr></thead>
+            <tbody id="reports"><tr><td colspan="8" class="muted">No cases yet</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pager" id="case-pager" hidden>
+          <span class="muted" id="case-range"></span>
+          <div class="pages" id="case-pages"></div>
+          <label class="muted" style="display:flex;gap:6px;align-items:center;margin:0;text-transform:none;letter-spacing:0">
+            rows
+            <select id="case-size" style="background:#070b0e;color:var(--text);border:1px solid var(--line);padding:4px 6px">
+              <option value="5">5</option>
+              <option value="8" selected>8</option>
+              <option value="15">15</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-indexof" hidden>
+    <form id="lf" class="panel">
+      <h2>Index of / status check</h2>
+      <div class="pad">
+        <p class="muted">Lista cerrada de rutas Apache/Nginx. Solo contra hosts autorizados. No es un fuzzer.</p>
+        <label class="field" for="l-base">Base URL</label>
+        <input id="l-base" type="text" placeholder="https://tudominio.com o http://1.2.3.4" required
+          style="width:100%;background:#070b0e;color:var(--text);border:1px solid var(--line);padding:8px 10px;font:13px ui-monospace,Menlo,Consolas,monospace">
+        <div class="row">
+          <div>
+            <label class="field" for="l-host">Host header (vhost / IP)</label>
+            <input id="l-host" type="text" placeholder="opcional"
+              style="width:100%;background:#070b0e;color:var(--text);border:1px solid var(--line);padding:8px 10px;font:13px ui-monospace,Menlo,Consolas,monospace">
+          </div>
+          <div>
+            <label class="field" for="l-delay">Delay (s)</label>
+            <input id="l-delay" type="number" min="0.15" max="5" step="0.05" value="0.4">
+          </div>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="l-insecure" checked> TLS insecure (IP / cert propio)</label>
+          <label><input type="checkbox" id="l-all"> Show 404/403</label>
+          <label><input type="checkbox" id="l-auth"> Target autorizado</label>
+        </div>
+        <button type="submit" id="l-go">Run index-of</button>
+        <span class="status" id="l-st">idle</span>
+        <span class="muted" id="l-paths"></span>
+      </div>
+    </form>
+    <div class="panel">
+      <h2>Hits</h2>
+      <div class="pad">
+        <div class="kpis" id="l-kpis">
+          <div class="kpi"><b>0</b><span>Listings</span></div>
+          <div class="kpi"><b>0</b><span>Status/info</span></div>
+          <div class="kpi"><b>0</b><span>Auth</span></div>
+          <div class="kpi"><b>0</b><span>Shown</span></div>
+          <div class="kpi"><b>0</b><span>Hits</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>HTTP</th><th>Kind</th><th>Path</th><th>Server</th><th>Note</th></tr></thead>
+            <tbody id="l-rows"><tr><td colspan="5" class="muted">No scan yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Collector log</h2>
+      <pre class="log" id="l-log">waiting for index-of task…</pre>
+    </div>
+  </main>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <div class="id" id="preview-label">DOSSIER</div>
+          <div class="meta" id="preview-meta"></div>
+        </div>
+        <button type="button" class="btn ghost tiny" id="copy-pack">Copy hunt pack</button>
+        <button type="button" class="x" id="close-preview" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="kpis" id="kpis"></div>
+        <div class="tabs">
+          <button type="button" class="btn ghost active" data-tab="flujo">Graph</button>
+          <button type="button" class="btn ghost" data-tab="stack">Stack</button>
+          <button type="button" class="btn ghost" data-tab="activos">Assets / CT</button>
+          <button type="button" class="btn ghost" data-tab="cves">CVE</button>
+          <button type="button" class="btn ghost" data-tab="md">Report</button>
+        </div>
+        <div id="tab-flujo"></div>
+        <div id="tab-stack" hidden></div>
+        <div id="tab-activos" hidden></div>
+        <div id="tab-cves" hidden></div>
+        <div id="tab-md" hidden class="md"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let timer = null;
+  let currentTab = "flujo";
+  let currentApex = null;
+  let caseItems = [];
+  let casePage = 1;
+  let caseSize = 8;
+  let caseQuery = "";
+  let caseFilter = "all";
+  let caseSort = "recent";
+  let lastPreview = null;
+
+  function filteredCases() {
+    const q = caseQuery.trim().toLowerCase();
+    let rows = caseItems.filter((r) => {
+      if (q && !String(r.apex || "").toLowerCase().includes(q)) return false;
+      if (caseFilter === "high" && r.level !== "high") return false;
+      if (caseFilter === "cve" && !(r.cves > 0)) return false;
+      if (caseFilter === "dedicated" && !(r.dedicated_ips > 0)) return false;
+      if (caseFilter === "cdn" && !(r.ips > 0 && r.dedicated_ips === 0 && r.cdn_ips > 0)) return false;
+      if (caseFilter === "open" && r.reviewed) return false;
+      if (caseFilter === "done" && !r.reviewed) return false;
+      return true;
+    });
+    rows = rows.slice();
+    if (caseSort === "risk") rows.sort((a, b) => (b.score || 0) - (a.score || 0));
+    else if (caseSort === "name") rows.sort((a, b) => String(a.apex).localeCompare(String(b.apex)));
+    else rows.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+    return rows;
+  }
+
+  function fmtWhen(r) {
+    if (r.generated_at) return esc(r.generated_at.replace("T", " ").replace("Z", "Z"));
+    if (!r.mtime) return "—";
+    const d = new Date(r.mtime * 1000);
+    return d.toISOString().slice(0, 16).replace("T", " ") + "Z";
+  }
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+  }
+  const dash = (s) => (s === 0 || s) ? esc(s) : "—";
+
+  function openModal() { $("overlay").classList.add("open"); document.body.style.overflow = "hidden"; }
+  function closeModal() { $("overlay").classList.remove("open"); document.body.style.overflow = ""; }
+  $("close-preview").addEventListener("click", closeModal);
+  $("overlay").addEventListener("click", (e) => { if (e.target === $("overlay")) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  function renderReports(items) {
+    caseItems = items || [];
+    drawCasePage();
+  }
+
+  function drawCasePage() {
+    const tb = $("reports");
+    const pager = $("case-pager");
+    const rows = filteredCases();
+    $("case-count").innerHTML = caseQuery.trim()
+      ? `scanned <b>${caseItems.length}</b> · match <b>${rows.length}</b>`
+      : `scanned <b>${caseItems.length}</b> · reviewed <b>${caseItems.filter((x) => x.reviewed).length}</b>`;
+    if (!caseItems.length) {
+      tb.innerHTML = '<tr><td colspan="8" class="muted">No cases yet</td></tr>';
+      pager.hidden = true;
+      return;
+    }
+    if (!rows.length) {
+      tb.innerHTML = '<tr><td colspan="8" class="muted">No match for that apex</td></tr>';
+      pager.hidden = true;
+      return;
+    }
+    const pages = Math.max(1, Math.ceil(rows.length / caseSize));
+    if (casePage < 1) casePage = 1;
+    if (casePage > pages) casePage = pages;
+    const start = (casePage - 1) * caseSize;
+    const slice = rows.slice(start, start + caseSize);
+    pager.hidden = rows.length <= caseSize && !caseQuery.trim() ? false : false;
+    $("case-range").textContent = `${start + 1}–${start + slice.length} / ${rows.length}`;
+    const box = $("case-pages");
+    box.innerHTML = "";
+    const addBtn = (label, page, disabled, active) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn ghost tiny" + (active ? " active" : "");
+      b.textContent = label;
+      b.disabled = disabled;
+      b.addEventListener("click", () => { casePage = page; drawCasePage(); });
+      box.appendChild(b);
+    };
+    addBtn("‹", casePage - 1, casePage <= 1, false);
+    const windowSize = 5;
+    let from = Math.max(1, casePage - 2);
+    let to = Math.min(pages, from + windowSize - 1);
+    from = Math.max(1, to - windowSize + 1);
+    if (from > 1) addBtn("1", 1, false, casePage === 1);
+    if (from > 2) {
+      const s = document.createElement("span");
+      s.className = "muted";
+      s.textContent = "…";
+      box.appendChild(s);
+    }
+    for (let p = from; p <= to; p++) addBtn(String(p), p, false, p === casePage);
+    if (to < pages - 1) {
+      const s = document.createElement("span");
+      s.className = "muted";
+      s.textContent = "…";
+      box.appendChild(s);
+    }
+    if (to < pages) addBtn(String(pages), pages, false, casePage === pages);
+    addBtn("›", casePage + 1, casePage >= pages, false);
+
+    tb.innerHTML = slice.map((r) => {
+      const lvl = r.level || "low";
+      return `<tr>
+        <td><input type="checkbox" data-rev="${esc(r.apex)}" ${r.reviewed ? "checked" : ""} title="${r.reviewed_at ? esc(r.reviewed_at) : "mark reviewed"}"></td>
+        <td><a data-open="${esc(r.apex)}"><code>${esc(r.apex)}</code></a></td>
+        <td><span class="pill risk-${esc(lvl)}">${esc(lvl)} ${dash(r.score)}</span></td>
+        <td>${dash(r.high_risk)}</td>
+        <td>${dash(r.cves)}</td>
+        <td>${dash(r.ips)}${r.cdn_ips ? ` <span class="pill cdn">${r.cdn_ips} cdn</span>` : ""}</td>
+        <td class="muted">${fmtWhen(r)}</td>
+        <td>
+          <button type="button" class="btn ghost tiny" data-open="${esc(r.apex)}">Open</button>
+          <button type="button" class="btn ghost tiny" data-pack="${esc(r.apex)}">Pack</button>
+          <button type="button" class="btn ghost tiny" data-indexof="${esc(r.apex)}">Index-of</button>
+          <button type="button" class="btn ghost tiny" data-rerun="${esc(r.apex)}">Re-run</button>
+          <button type="button" class="btn ghost tiny danger" data-del="${esc(r.apex)}">Delete</button>
+        </td>
+      </tr>`;
+    }).join("");
+    tb.querySelectorAll("[data-open]").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        openPreview(el.getAttribute("data-open"));
+      });
+    });
+    tb.querySelectorAll("[data-rerun]").forEach((el) => {
+      el.addEventListener("click", () => rerunCase(el.getAttribute("data-rerun")));
+    });
+    tb.querySelectorAll("[data-del]").forEach((el) => {
+      el.addEventListener("click", () => deleteCase(el.getAttribute("data-del")));
+    });
+    tb.querySelectorAll("[data-pack]").forEach((el) => {
+      el.addEventListener("click", () => copyHuntPack(el.getAttribute("data-pack")));
+    });
+    tb.querySelectorAll("[data-rev]").forEach((el) => {
+      el.addEventListener("change", () => toggleReviewed(el.getAttribute("data-rev"), el.checked));
+    });
+    tb.querySelectorAll("[data-indexof]").forEach((el) => {
+      el.addEventListener("click", () => {
+        $("l-base").value = "https://" + el.getAttribute("data-indexof");
+        showView("indexof");
+      });
+    });
+  }
+
+  async function toggleReviewed(apex, reviewed) {
+    const local = loadLocalReviewed();
+    if (reviewed) local[apex] = { reviewed: true, reviewed_at: new Date().toISOString() };
+    else delete local[apex];
+    saveLocalReviewed(local);
+    const row = caseItems.find((x) => x.apex === apex);
+    if (row) {
+      row.reviewed = reviewed;
+      row.reviewed_at = reviewed ? local[apex].reviewed_at : null;
+    }
+    drawCasePage();
+    try {
+      const res = await fetch("/api/reviewed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apex, reviewed }),
+      });
+      const data = await res.json();
+      if (data.ok && data.reports) renderReports(data.reports);
+    } catch (_) {}
+  }
+
+  async function copyHuntPack(apex) {
+    try {
+      const res = await fetch("/api/huntpack/" + encodeURIComponent(apex));
+      const text = await res.text();
+      if (!res.ok) throw new Error(text);
+      await navigator.clipboard.writeText(text);
+      $("st").className = "status ok";
+      $("st").textContent = "hunt pack copied · " + apex;
+    } catch (err) {
+      $("st").className = "status error";
+      $("st").textContent = "copy failed";
+    }
+  }
+
+  async function rerunCase(apex) {
+    $("domains").value = apex;
+    if ($("go").disabled) {
+      $("st").className = "status error";
+      $("st").textContent = "job already running";
+      return;
+    }
+    $("f").requestSubmit();
+  }
+
+  async function deleteCase(apex) {
+    if (!confirm("Delete case files for " + apex + "?")) return;
+    const res = await fetch("/api/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apex }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      $("st").className = "status error";
+      $("st").textContent = data.error || "delete failed";
+      return;
+    }
+    if (currentApex === apex) closeModal();
+    renderReports(data.reports || []);
+    $("st").className = "status ok";
+    $("st").textContent = "deleted " + apex;
+  }
+
+  function showTab(name) {
+    currentTab = name;
+    document.querySelectorAll("[data-tab]").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-tab") === name);
+    });
+    ["flujo", "stack", "activos", "cves", "md"].forEach((t) => {
+      $(`tab-${t}`).hidden = t !== name;
+    });
+  }
+  document.querySelectorAll("[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => showTab(btn.getAttribute("data-tab")));
+  });
+
+  function mdInline(text) {
+    return esc(text)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  function renderMarkdown(src) {
+    const lines = (src || "").replace(/\r\n/g, "\n").split("\n");
+    let html = "", i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.startsWith("```")) {
+        const buf = []; i++;
+        while (i < lines.length && !lines[i].startsWith("```")) buf.push(lines[i++]);
+        html += "<pre><code>" + esc(buf.join("\n")) + "</code></pre>"; i++; continue;
+      }
+      if (line.startsWith("|") && i + 1 < lines.length && /^\|?\s*-+/.test(lines[i + 1] || "")) {
+        const rows = [];
+        while (i < lines.length && lines[i].startsWith("|")) {
+          rows.push(lines[i].split("|").slice(1, -1).map((c) => c.trim())); i++;
+        }
+        if (rows.length >= 2) rows.splice(1, 1);
+        html += "<table>" + rows.map((r, ri) => {
+          const tag = ri === 0 ? "th" : "td";
+          return "<tr>" + r.map((c) => `<${tag}>${mdInline(c)}</${tag}>`).join("") + "</tr>";
+        }).join("") + "</table>";
+        continue;
+      }
+      if (/^### /.test(line)) html += "<h3>" + mdInline(line.slice(4)) + "</h3>";
+      else if (/^## /.test(line)) html += "<h2>" + mdInline(line.slice(3)) + "</h2>";
+      else if (/^# /.test(line)) html += "<h1>" + mdInline(line.slice(2)) + "</h1>";
+      else if (/^[-*] /.test(line)) {
+        html += "<ul>";
+        while (i < lines.length && /^[-*] /.test(lines[i])) { html += "<li>" + mdInline(lines[i].slice(2)) + "</li>"; i++; }
+        html += "</ul>"; continue;
+      } else if (line.trim()) html += "<p>" + mdInline(line) + "</p>";
+      i++;
+    }
+    return html || "<p class='muted'>Empty report</p>";
+  }
+
+  function portPills(ports) {
+    return (ports || []).map((p) => {
+      const cls = p.kind === "high" ? "high" : (p.kind === "web" ? "web" : "");
+      const label = p.service ? `${p.port}/${p.service}` : p.port;
+      return `<span class="pill ${cls}">${esc(label)}</span>`;
+    }).join(" ");
+  }
+
+  function renderFlow(data) {
+    const live = (data.flow || []).filter((x) => x.live);
+    const dead = (data.flow || []).filter((x) => !x.live);
+    let html = "";
+    if (!live.length) html += "<p class='muted'>No live A/AAAA records.</p>";
+    live.forEach((node) => {
+      const h = node.http || {};
+      const bits = [];
+      if (h.status) bits.push("HTTP " + h.status);
+      if (h.product) bits.push(h.product + (h.version ? "/" + h.version : ""));
+      if (h.title) bits.push(h.title);
+      html += `<div class="flow-host">
+        <div class="flow-head">
+          <code>${esc(node.host)}</code>
+          <span class="pill live">live</span>
+          ${(h.cdn || (node.ips || []).some((x) => x.cdn)) ? '<span class="pill cdn">cdn / shared</span>' : ""}
+          <span class="muted">${esc(bits.join(" · "))}</span>
+        </div>
+        ${(node.ips || []).map((ip) => `
+          <div class="flow-ip ${ip.cdn ? "cdn" : ""}">
+            <div><code>${esc(ip.ip)}</code>
+              ${ip.cdn ? '<span class="pill cdn">do not attribute all ports</span>' : ""}
+              <span class="muted"> ${dash(ip.org)} ${ip.asn ? "· " + esc(ip.asn) : ""} · conf ${dash(ip.confidence)}</span>
+            </div>
+            <div class="ports">${portPills(ip.ports) || '<span class="muted">no indexed ports</span>'}</div>
+            ${ip.vulns && ip.vulns.length ? `<div class="muted">CVE: ${ip.vulns.map((c) =>
+              `<a href="https://nvd.nist.gov/vuln/detail/${encodeURIComponent(c)}" target="_blank" rel="noopener">${esc(c)}</a>`
+            ).join(", ")}</div>` : ""}
+            ${ip.cpes && ip.cpes.length ? `<div class="muted">CPE: ${esc(ip.cpes.slice(0, 8).join(", "))}</div>` : ""}
+          </div>`).join("")}
+        ${h.note ? `<p class="muted">${esc(h.note)}</p>` : ""}
+      </div>`;
+    });
+    if (dead.length) {
+      html += `<p class="muted">CT names without DNS (${dead.length})</p>
+        <ul class="dead-list">${dead.map((d) => `<li><code>${esc(d.host)}</code></li>`).join("")}</ul>`;
+    }
+    if (data.queries && data.queries.length) {
+      html += "<p class='muted' style='margin-top:14px'>Shodan queries</p><pre class='log'>" +
+        data.queries.map(esc).join("\n") + "</pre>";
+    }
+    $("tab-flujo").innerHTML = html;
+  }
+
+  function renderPreview(data) {
+    lastPreview = data;
+    $("preview-label").textContent = "DOSSIER // " + (data.apex || "").toUpperCase();
+    $("preview-meta").textContent = (data.generated_at || "") + " · PASSIVE INDEX";
+    const st = data.stats || {};
+    $("kpis").innerHTML = [
+      ["CT names", st.names],
+      ["Live DNS", st.live_names],
+      ["IPs", st.ips],
+      ["High-risk", st.high_risk_findings],
+      ["CVE", st.cves],
+    ].map(([k, v]) => `<div class="kpi"><b>${dash(v)}</b><span>${k}</span></div>`).join("");
+    renderFlow(data);
+    const stack = data.stack || [];
+    $("tab-stack").innerHTML = stack.length ? `<table><thead><tr>
+        <th>Host</th><th>IP</th><th>CDN</th><th>HTTP</th><th>Server</th><th>Product</th><th>Ver</th><th>Src</th><th>Title</th><th>Note</th>
+      </tr></thead><tbody>${stack.map((s) => `<tr>
+        <td><code>${esc(s.host)}</code></td><td><code>${esc((s.ips || []).join(", "))}</code></td>
+        <td>${s.cdn ? '<span class="pill cdn">CDN</span>' : "no"}</td>
+        <td>${dash(s.status)}</td><td>${dash(s.server_raw)}</td><td>${dash(s.product)}</td>
+        <td>${dash(s.version)}</td><td>${dash(s.version_source)}</td><td>${dash(s.title)}</td>
+        <td class="muted">${dash(s.note)}</td>
+      </tr>`).join("")}</tbody></table>` : "<p class='muted'>No HTTP probes. Uncheck Skip HTTP and rerun.</p>";
+    const names = data.names || [];
+    const liveSet = new Set((data.flow || []).filter((x) => x.live).map((x) => x.host));
+    $("tab-activos").innerHTML = names.length ? `<table><thead><tr>
+        <th>Hostname</th><th>State</th><th>CT source</th><th>First seen</th>
+      </tr></thead><tbody>${names.map((n) => `<tr>
+        <td><code>${esc(n.host)}</code></td>
+        <td>${liveSet.has(n.host) ? '<span class="pill live">resolves</span>' : '<span class="pill dead">no A/AAAA</span>'}</td>
+        <td class="muted">${esc((n.sources || []).join(", "))}</td>
+        <td class="muted">${dash(n.first_seen)}</td>
+      </tr>`).join("")}</tbody></table>` : "<p class='muted'>No CT inventory.</p>";
+    const cves = [];
+    (data.hosts || []).forEach((h) => {
+      (h.vulns || []).forEach((c) => cves.push({ cve: c, ip: h.ip, org: h.org, hosts: h.hostnames_ours || [] }));
+    });
+    $("tab-cves").innerHTML = cves.length ? `<table><thead><tr>
+        <th>CVE</th><th>IP</th><th>Hostnames</th><th>Org</th>
+      </tr></thead><tbody>${cves.map((x) => `<tr>
+        <td><a href="https://nvd.nist.gov/vuln/detail/${encodeURIComponent(x.cve)}" target="_blank" rel="noopener">${esc(x.cve)}</a></td>
+        <td><code>${esc(x.ip)}</code></td>
+        <td>${esc((x.hosts || []).join(", "))}</td>
+        <td class="muted">${dash(x.org)}</td>
+      </tr>`).join("")}</tbody></table>
+      <p class="muted">Inferred from CPE/version. Validate on NVD before treating as exploitable.</p>`
+      : "<p class='muted'>No indexed CVEs for these IPs.</p>";
+    $("tab-md").innerHTML = renderMarkdown(data.markdown || "");
+    showTab(currentTab);
+    openModal();
+  }
+
+  async function openPreview(apex) {
+    currentApex = apex;
+    const res = await fetch("/api/preview/" + encodeURIComponent(apex));
+    if (!res.ok) { openModal(); $("tab-flujo").textContent = "Unable to load dossier"; return; }
+    renderPreview(await res.json());
+  }
+
+  async function poll() {
+    const res = await fetch("/api/state");
+    const data = await res.json();
+    renderReports(data.reports);
+    const sh = $("shodan-status");
+    if (sh) {
+      sh.textContent = data.shodan_configured
+        ? "Shodan API: backend online"
+        : "Shodan API: offline → InternetDB only. Set SHODAN_API_KEY in .env or secrets.json";
+    }
+    const job = data.job;
+    if (!job) return;
+    $("log").textContent = (job.log || []).join("\n") || "…";
+    $("log").scrollTop = $("log").scrollHeight;
+    const st = $("st");
+    st.className = "status " + (job.status === "running" ? "run" : job.status);
+    st.textContent = job.status === "running"
+      ? "collecting · " + (job.domains || []).join(", ")
+      : job.status;
+    $("go").disabled = job.status === "running";
+    if (job.status === "ok" && job.domains && job.domains[0] && currentApex !== job.domains[0]) {
+      openPreview(job.domains[0]);
+    }
+    if (job.status !== "running" && timer) { clearInterval(timer); timer = null; }
+  }
+
+  $("f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("go").disabled = true;
+    $("st").className = "status run";
+    $("st").textContent = "queued…";
+    const body = {
+      domains: $("domains").value,
+      max_subs: Number($("max_subs").value),
+      max_http: Number($("max_http").value),
+      no_crtsh: $("no_crtsh").checked,
+      skip_http: $("skip_http").checked,
+    };
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      $("go").disabled = false;
+      $("st").className = "status error";
+      $("st").textContent = data.error || "error";
+      return;
+    }
+    currentApex = null;
+    if (timer) clearInterval(timer);
+    timer = setInterval(poll, 800);
+    poll();
+  });
+
+  $("case-size").addEventListener("change", () => {
+    caseSize = Number($("case-size").value) || 8;
+    casePage = 1;
+    drawCasePage();
+  });
+  $("case-q").addEventListener("input", () => {
+    caseQuery = $("case-q").value;
+    casePage = 1;
+    drawCasePage();
+  });
+  $("case-sort").addEventListener("change", () => {
+    caseSort = $("case-sort").value;
+    casePage = 1;
+    drawCasePage();
+  });
+  document.querySelectorAll("#case-chips [data-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      caseFilter = btn.getAttribute("data-filter");
+      document.querySelectorAll("#case-chips [data-filter]").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+      casePage = 1;
+      drawCasePage();
+    });
+  });
+  $("copy-pack").addEventListener("click", () => {
+    if (lastPreview && lastPreview.apex) copyHuntPack(lastPreview.apex);
+  });
+
+  function showView(name) {
+    const recon = name !== "indexof";
+    $("view-recon").hidden = !recon;
+    $("view-indexof").hidden = recon;
+    document.querySelectorAll(".mods [data-view]").forEach((a) => {
+      a.classList.toggle("active", a.getAttribute("data-view") === (recon ? "recon" : "indexof"));
+    });
+    $("brand-sub").textContent = recon
+      ? "// PASSIVE RECON · CT · DNS · SHODAN"
+      : "// INDEX OF · APACHE/NGINX LISTING";
+    location.hash = recon ? "recon" : "indexof";
+  }
+  document.querySelectorAll(".mods [data-view]").forEach((a) => {
+    a.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      showView(a.getAttribute("data-view"));
+    });
+  });
+  if (location.hash === "#indexof") showView("indexof");
+
+  let listingTimer = null;
+  function renderListing(job) {
+    if (!job) return;
+    const rows = job.rows || [];
+    const listings = rows.filter((r) => r.kind === "DIRECTORY_LISTING").length;
+    const status = rows.filter((r) => ["APACHE_STATUS","APACHE_INFO","NGINX_STUB_STATUS"].includes(r.kind)).length;
+    const auth = rows.filter((r) => r.kind === "AUTH").length;
+    $("l-kpis").innerHTML = [
+      ["Listings", listings],
+      ["Status/info", status],
+      ["Auth", auth],
+      ["Shown", rows.length],
+      ["Hits", job.hits || 0],
+    ].map(([k, v]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+    $("l-rows").innerHTML = rows.length ? rows.map((r) => {
+      const cls = r.kind === "DIRECTORY_LISTING" ? "hit-listing" : (r.hit ? "hit-status" : "");
+      return `<tr>
+        <td>${r.status || "—"}</td>
+        <td class="${cls}">${esc(r.kind)}</td>
+        <td><code>${esc(r.path)}</code></td>
+        <td class="muted">${dash(r.server)}</td>
+        <td class="muted">${esc((r.tls_unverified ? "tls unverified · " : "") + (r.location || r.error || (r.hit ? "exposed" : "")))}</td>
+      </tr>`;
+    }).join("") : '<tr><td colspan="5" class="muted">No rows yet</td></tr>';
+    $("l-log").textContent = (job.log || []).join("\n");
+    $("l-log").scrollTop = $("l-log").scrollHeight;
+    $("l-st").className = "status " + (job.status === "running" ? "run" : job.status);
+    $("l-st").textContent = job.status === "running" ? "scanning · " + (job.base || "") : job.status;
+    $("l-go").disabled = job.status === "running";
+  }
+
+  async function pollListing() {
+    const res = await fetch("/api/listing/state");
+    const data = await res.json();
+    if (data.paths) $("l-paths").textContent = " · " + data.paths + " paths";
+    renderListing(data.listing);
+    if (!data.listing || data.listing.status !== "running") {
+      if (listingTimer) { clearInterval(listingTimer); listingTimer = null; }
+    }
+  }
+
+  $("lf").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!$("l-auth").checked) {
+      $("l-st").className = "status error";
+      $("l-st").textContent = "marca target autorizado";
+      return;
+    }
+    $("l-go").disabled = true;
+    $("l-st").className = "status run";
+    $("l-st").textContent = "queued…";
+    const res = await fetch("/api/listing/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        base: $("l-base").value,
+        host: $("l-host").value,
+        delay: Number($("l-delay").value),
+        insecure: $("l-insecure").checked,
+        show_all: $("l-all").checked,
+        authorized: true,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      $("l-go").disabled = false;
+      $("l-st").className = "status error";
+      $("l-st").textContent = data.error || "error";
+      return;
+    }
+    if (listingTimer) clearInterval(listingTimer);
+    listingTimer = setInterval(pollListing, 700);
+    pollListing();
+  });
+
+  poll();
+</script>
+</body>
+</html>
