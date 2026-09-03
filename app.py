@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""UI mínima (stdlib) para exposure_recon.py — un job a la vez, log en vivo."""
 from __future__ import annotations
 
 import json
@@ -31,7 +30,7 @@ sys.path.insert(0, str(ROOT))
 try:
     from index_of_check import PATHS as LISTING_PATHS
     from index_of_check import scan as listing_scan
-except Exception:  # pragma: no cover
+except Exception:  
     LISTING_PATHS = []
     listing_scan = None
 
