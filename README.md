@@ -13,7 +13,7 @@ exposure_recon/
   app.py                 # web UI (stdlib http.server)
   exposure_recon.py      # passive recon CLI (7 phases)
   index_of_check.py      # Index of / status-page checker
-  templates/index.html   # UI (not embedded in app.py)
+  templates/index.html   # UI
   requirements.txt
   targets.txt
   .env.example
