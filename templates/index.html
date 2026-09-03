@@ -204,7 +204,7 @@
             <input id="max_http" type="number" min="0" max="50" value="15">
           </div>
         </div>
-        <p class="muted" id="shodan-status" style="margin:10px 0 0">Shodan: backend only (.env / secrets.json)</p>
+        <p class="muted" id="shodan-status" style="margin:10px 0 0">Shodan: backend only</p>
         <div class="checks">
           <label><input type="checkbox" id="no_crtsh" checked> Skip crt.sh</label>
           <label><input type="checkbox" id="skip_http"> Skip HTTP</label>
@@ -266,7 +266,7 @@
     <form id="lf" class="panel">
       <h2>Index of / status check</h2>
       <div class="pad">
-        <p class="muted">Lista cerrada de rutas Apache/Nginx. Solo contra hosts autorizados. No es un fuzzer.</p>
+        <p class="muted">Apache/Nginx</p>
         <label class="field" for="l-base">Base URL</label>
         <input id="l-base" type="text" placeholder="https://tudominio.com o http://1.2.3.4" required
           style="width:100%;background:#070b0e;color:var(--text);border:1px solid var(--line);padding:8px 10px;font:13px ui-monospace,Menlo,Consolas,monospace">
@@ -282,7 +282,7 @@
           </div>
         </div>
         <div class="checks">
-          <label><input type="checkbox" id="l-insecure" checked> TLS insecure (IP / cert propio)</label>
+          <label><input type="checkbox" id="l-insecure" checked> TLS insecure (IP / cert)</label>
           <label><input type="checkbox" id="l-all"> Show 404/403</label>
           <label><input type="checkbox" id="l-auth"> Target autorizado</label>
         </div>
