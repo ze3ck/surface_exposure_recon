@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-index_of_check.py — directory listing (Index of) en UN host autorizado.
-
-Lista cerrada de rutas típicas Apache/Nginx + firmas de listing.
-Uso defensivo: tu IP/dominio o alcance de pentest autorizado.
+index_of_check.py — directory listing (Index of)
 """
 from __future__ import annotations
 
