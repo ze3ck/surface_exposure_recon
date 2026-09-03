@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Recon pasivo por fases para apex propios.
-CT (crt.name / crt.sh) → DNS → RDAP → InternetDB/Shodan → puertos → CVE → HTTP liviano.
-No escanea puertos ni explota servicios.
+Passive recon
+CT (crt.name / crt.sh) → DNS → RDAP → InternetDB/Shodan → puertos → CVE → Soft HTTP.
 """
 from __future__ import annotations
 
@@ -31,7 +30,6 @@ RDAP_IP = "https://rdap.org/ip/{ip}"
 UA = "exposure-recon/1.0 (passive asset inventory)"
 TIMEOUT = 25
 
-# Puertos que en un sitio web público suelen ser hallazgo, no "el front".
 HIGH_RISK = {
     21: "FTP",
     22: "SSH",
@@ -292,12 +290,10 @@ class Recon:
                 cur["sources"].append(row["source"])
             if row.get("first_seen") and not cur["first_seen"]:
                 cur["first_seen"] = row["first_seen"]
-        # siempre incluir apex y www
         for extra in (apex, f"www.{apex}"):
             merged.setdefault(extra, {"host": extra, "sources": ["seed"], "first_seen": ""})
         names = sorted(merged.values(), key=lambda x: x["host"])
         if self.args.max_subs and len(names) > self.args.max_subs:
-            # Siempre conservar apex y www; el resto por etiqueta útil y poca profundidad.
             forced = {apex, f"www.{apex}"}
 
             def score(item: dict[str, Any]) -> tuple[int, int, str]:
@@ -593,7 +589,7 @@ def build_host_rows(
         ports = sorted(set(int(p) for p in ports))
         vulns = list(dict.fromkeys((db.get("vulns") or []) + (sho.get("vulns") or [])))
         cpes = db.get("cpes") or []
-        recon = Recon.__new__(Recon)  # only for classify
+        recon = Recon.__new__(Recon)  
         classification = Recon.classify_ports(recon, ports)
         ngx = nginx_from_cpes(cpes)
         sh_web = shodan_web_hint(sho if isinstance(sho, dict) else None)
