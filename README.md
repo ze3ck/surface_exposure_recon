@@ -19,7 +19,7 @@ exposure_recon/
   .env.example
   secrets.example.json
   reports/<apex>/        # case output
-  case_meta.json         # reviewed flags (created at runtime)
+  case_meta.json         # reviewed flags
 ```
 
 ## Requirements
