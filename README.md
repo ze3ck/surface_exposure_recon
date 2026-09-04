@@ -6,7 +6,7 @@ It does **not** run nmap, does **not** exploit anything, and does **not** brute-
 
 Use it only against assets you own or have written authorization to assess.
 
-## Layout
+## Layout 
 
 ```
 exposure_recon/
