@@ -11,7 +11,7 @@ Use it only against assets you own or have written authorization to assess.
 ```
 exposure_recon/
   app.py                 # web UI
-  exposure_recon.py      # passive recon CLI (7 phases)
+  exposure_recon.py      # passive recon CLI
   index_of_check.py      # Index of / status-page checker
   templates/index.html   # UI
   requirements.txt
