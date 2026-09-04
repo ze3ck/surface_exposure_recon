@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-index_of_check.py — directory listing (Index of)
-"""
+
 from __future__ import annotations
 
 import argparse
